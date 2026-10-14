@@ -1,0 +1,35 @@
+region            = "us-east-1"
+processing_tables = "all"
+processing_mode   = "incremental"
+processing_date   = ""
+
+emr_cluster_config = {
+  name                        = "flight-radar-etl"
+  release_label               = "emr-7.5.0"
+  applications                = ["Spark", "Hive"]
+  instance_type_master        = "m6g.xlarge"
+  instance_type_core          = "r6g.2xlarge"
+  instance_type_task          = "c6g.2xlarge"
+  core_instance_count         = 2
+  task_instance_count         = 1
+  core_ebs_size_gb            = 100
+  task_ebs_size_gb            = 200
+  core_spot_bid_price_pct     = 90
+  auto_termination_idle       = 30
+  managed_scaling             = true
+  min_capacity                = 1
+  max_capacity                = 4
+}
+
+raw_database      = "db_raw"
+trusted_database  = "db_trusted"
+raw_bucket        = ""
+trusted_bucket    = ""
+checkpoint_bucket = ""
+log_level         = "INFO"
+
+tags = {
+  Project     = "flight-radar"
+  Environment = "prod"
+  Owner       = "data-engineering"
+}
