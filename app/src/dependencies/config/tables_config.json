@@ -1,0 +1,104 @@
+[
+  {
+    "target_table": "dim_aircraft_type",
+    "source_tables": ["fr_aircraft_types"],
+    "primary_key": ["icao_code"],
+    "surrogate_key": { "name": "aircraft_type_key", "col": "icao_code" },
+    "partition_keys": [{ "name": "event_date", "type": "date" }],
+    "transform_type": "spark_sql",
+    "transform_query": "sql/dim_aircraft_type.sql",
+    "dependencies": [],
+    "order": 1
+  },
+  {
+    "target_table": "dim_aircraft",
+    "source_tables": ["fr_aircraft", "fr_aircraft_types"],
+    "primary_key": ["icao24"],
+    "surrogate_key": { "name": "aircraft_key", "col": "icao24" },
+    "partition_keys": [{ "name": "event_date", "type": "date" }],
+    "transform_type": "spark_sql",
+    "transform_query": "sql/dim_aircraft.sql",
+    "dependencies": ["dim_aircraft_type"],
+    "order": 2
+  },
+  {
+    "target_table": "dim_airport",
+    "source_tables": ["fr_airports"],
+    "primary_key": ["icao_code"],
+    "surrogate_key": { "name": "airport_key", "col": "icao_code" },
+    "merge_fallback_keys": ["id"],
+    "partition_keys": [{ "name": "event_date", "type": "date" }],
+    "transform_type": "spark_sql",
+    "transform_query": "sql/dim_airport.sql",
+    "dependencies": [],
+    "order": 3
+  },
+  {
+    "target_table": "dim_airline",
+    "source_tables": ["fr_airlines"],
+    "primary_key": ["icao_code"],
+    "surrogate_key": { "name": "airline_key", "col": "icao_code" },
+    "partition_keys": [{ "name": "event_date", "type": "date" }],
+    "transform_type": "spark_sql",
+    "transform_query": "sql/dim_airline.sql",
+    "dependencies": [],
+    "order": 4
+  },
+  {
+    "target_table": "dim_country",
+    "source_tables": ["fr_countries"],
+    "primary_key": ["id"],
+    "surrogate_key": { "name": "country_key", "col": "id" },
+    "partition_keys": [{ "name": "event_date", "type": "date" }],
+    "transform_type": "spark_sql",
+    "transform_query": "sql/dim_country.sql",
+    "dependencies": [],
+    "order": 5
+  },
+  {
+    "target_table": "dim_route",
+    "source_tables": ["fr_routes", "fr_airports"],
+    "primary_key": ["id"],
+    "surrogate_key": { "name": "route_key", "col": "id" },
+    "partition_keys": [{ "name": "event_date", "type": "date" }],
+    "transform_type": "spark_sql",
+    "transform_query": "sql/dim_route.sql",
+    "dependencies": ["dim_airport"],
+    "order": 6
+  },
+  {
+    "target_table": "dim_date",
+    "source_tables": [],
+    "primary_key": ["date_key"],
+    "partition_keys": [],
+    "transform_type": "pyspark",
+    "transform_module": "jobs.process_dim_date",
+    "dependencies": [],
+    "order": 7
+  },
+  {
+    "target_table": "fact_flight",
+    "source_tables": ["fr_flights"],
+    "primary_key": ["flight_id"],
+    "partition_keys": [{ "name": "event_date", "type": "date", "source_column": "scheduled_departure" }],
+    "transform_type": "pyspark",
+    "transform_module": "jobs.process_fact_flight",
+    "dependencies": ["dim_airline", "dim_aircraft", "dim_airport", "dim_route"],
+    "order": 10,
+    "enable_zorder": true,
+    "zorder_cols": ["flight_id"],
+    "enum_columns": { "status": ["scheduled", "active", "landed", "cancelled", "diverted"] }
+  },
+  {
+    "target_table": "fact_flight_position",
+    "source_tables": ["fr_aircraft_positions"],
+    "primary_key": ["position_id", "recorded_at"],
+    "partition_keys": [{ "name": "event_date", "type": "date", "source_column": "recorded_at" }],
+    "transform_type": "pyspark",
+    "transform_module": "jobs.process_fact_flight_position",
+    "dependencies": ["dim_aircraft"],
+    "order": 11,
+    "enable_zorder": true,
+    "zorder_cols": ["aircraft_icao24", "recorded_at"]
+  }
+]
